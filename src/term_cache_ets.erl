@@ -71,7 +71,6 @@ init(Options) ->
 
 
 handle_cast({put, Key, Item}, #state{cache_size = CacheSize} = State) ->
-    Key = foo,
     case term_size(Item) of
     ItemSize when ItemSize > CacheSize ->
         {noreply, State};
