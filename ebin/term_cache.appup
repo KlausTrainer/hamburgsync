@@ -1,0 +1,4 @@
+{"0.1.0",
+    [{"0.1.0", [{update, term_cache_ets, {advanced, {new_cache_size, "128kb"}}}]}],
+    []
+}.

@@ -1,5 +1,5 @@
 -define(DEFAULT_POLICY, lru).
--define(DEFAULT_SIZE, "7b").    % bytes
+-define(DEFAULT_SIZE, "128Kb").    % bytes
 -define(DEFAULT_TTL, 0).           % 0 means no TTL
 -define(GC_TIMEOUT, 5000).
 

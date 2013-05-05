@@ -145,8 +145,15 @@ terminate(_Reason, #state{items = Items, atimes = ATimes}) ->
     true = ets:delete(ATimes).
 
 
-code_change(_OldVsn, State, _Extra) ->
-    {ok, State}.
+code_change(_OldVsn, State, Extra) ->
+    {new_cache_size, NewCacheSize} = Extra,
+    Used = State#state.cache_size - State#state.free,
+    CacheSize = parse_size(NewCacheSize),
+    NewState = State#state{cache_size = CacheSize, free = CacheSize - Used},
+    error_logger:info_msg(
+        "upgrading ~p ...~nExtra: ~p~nState: ~p~nNewState: ~p~n",
+        [?MODULE, Extra, State, NewState]),
+    {ok, NewState}.
 
 
 %% helper functions
