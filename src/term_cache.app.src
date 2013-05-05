@@ -1,6 +1,6 @@
 {application, term_cache,
  [{description, "A simple cache server that stores Erlang terms."},
-  {vsn, "0.1.0"},
+  {vsn, "0.1.1"},
   {modules, []},
   {mod, {term_cache_app, []}},
   {registered, []},
