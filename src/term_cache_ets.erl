@@ -52,7 +52,8 @@ stop(Cache) ->
 
 init(Options) ->
     Size = parse_size(value(size, Options, ?DEFAULT_SIZE)),
-    Policy= value(policy, Options, ?DEFAULT_POLICY),
+    Policy = value(policy, Options, ?DEFAULT_POLICY),
+    BackupDb = value(backup_db, Options, undefined),
     State = #state{
         cache_size = Size,
         free = Size,
@@ -65,8 +66,10 @@ init(Options) ->
                 fun ets:first/1;
             mru ->
                 fun ets:last/1
-            end
+            end,
+        backup_db = BackupDb
     },
+    maybe_restore_from_backup_db(State),
     {ok, State}.
 
 
@@ -85,10 +88,12 @@ handle_cast({put, Key, Item}, #state{cache_size = CacheSize} = State) ->
         Timer = set_timer(Key, Ttl),
         true = ets:insert(ATimes, {Now, Key}),
         true = ets:insert(Items, {Key, {Item, ItemSize, Now, Timer}}),
+        maybe_put_in_backup_db(State, Key, Item),
         {noreply, State#state{free = Free - ItemSize}, ?GC_TIMEOUT}
     end;
 
 handle_cast({delete, Key}, State) ->
+    maybe_delete_from_backup_db(State, Key),
     {noreply, purge_item(Key, State)}.
 
 
@@ -133,6 +138,13 @@ handle_info({expired, Key}, State) ->
     true = ets:delete(Items, Key),
     true = ets:delete(ATimes, ATime),
     {noreply, State#state{free = Free + ItemSize}, ?GC_TIMEOUT};
+
+handle_info({restore, Key, Item}, State) ->
+    case ets:lookup(State#state.items, Key) of
+    [] -> gen_server:cast(self(), {put, Key, Item});
+    _ -> ok
+    end,
+    {noreply, State};
 
 handle_info(timeout, State) ->
     true = erlang:garbage_collect(),
@@ -211,6 +223,27 @@ start(StartFun, Options) ->
         gen_server:StartFun(?MODULE, Options, []);
     Name ->
         gen_server:StartFun({local, Name}, ?MODULE, Options, [])
+    end.
+
+
+maybe_restore_from_backup_db(State) ->
+    case State#state.backup_db of
+    undefined -> ok;
+    BackupDb -> gen_server:cast(BackupDb, {restore, self()})
+    end.
+
+
+maybe_put_in_backup_db(State, Key, Item) ->
+    case State#state.backup_db of
+    undefined -> ok;
+    BackupDb -> gen_server:cast(BackupDb, {put, Key, Item})
+    end.
+
+
+maybe_delete_from_backup_db(State, Key) ->
+    case State#state.backup_db of
+    undefined -> ok;
+    BackupDb -> gen_server:cast(BackupDb, {delete, Key})
     end.
 
 

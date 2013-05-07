@@ -12,7 +12,8 @@
     atimes,
     take_fun,
     hits = 0,
-    misses = 0
+    misses = 0,
+    backup_db
 }).
 
 -type cache() :: pid() | atom().
@@ -21,7 +22,7 @@
 
 -type options() :: [option()].
 -type option() :: {name, atom()} | {policy, policy()} | {size, size()}
-                  | {ttl, timeout()}.
+                  | {ttl, timeout()} | {backup_db, pid() | atom()}.
 -type size() :: integer() | string() | binary() | atom().
 -type policy() :: lru | mru.
 

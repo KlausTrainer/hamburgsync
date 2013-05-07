@@ -14,7 +14,7 @@
 
 -spec start_link() -> {ok, pid()} | ignore | {error, term()}.
 start_link() ->
-    start_link([{name, term_cache}]).
+    start_link([{name, term_cache}, {backup_db, term_cache_db}]).
 
 -spec start_link(term_cache:options()) -> {ok, pid()} | ignore | {error, term()}.
 start_link(Options) ->
@@ -24,8 +24,11 @@ start_link(Options) ->
 %% supervisor callback
 
 init(Options) ->
+    TermCacheDbPath = code:priv_dir(term_cache) ++ "/term_cache_db.bitcask",
+    TermCacheDb = {term_cache_db, {term_cache_db, start_link, [TermCacheDbPath]},
+                   permanent, 2000, worker, [term_cache_db]},
     TermCache = {term_cache_ets, {term_cache_ets, start_link, Options},
                  permanent, 2000, worker, [term_cache_ets]},
-    Children = [TermCache],
+    Children = [TermCacheDb, TermCache],
     RestartStrategy = {one_for_one, 5, 4},
     {ok, {RestartStrategy, Children}}.
